@@ -6,6 +6,10 @@ import pandas as pd
 import joblib
 import shap
 import streamlit as st
+from sklearn.metrics import (
+    precision_score, recall_score, f1_score,
+    roc_auc_score, average_precision_score, confusion_matrix,
+)
 
 st.set_page_config(page_title="Fraud Detection Analyst Dashboard", layout="wide")
 
@@ -60,13 +64,33 @@ tab_primary, tab_paysim = st.tabs([
 ])
 
 with tab_primary:
-    st.caption(f"Model: XGBoost (cost-sensitive) | Scoring {len(results_df):,} held-out test transactions")
+    y_true = results_df["true_label"]
+    y_pred = results_df["flagged"].astype(int)
+    y_score = results_df["risk_score"]
 
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Transactions scored", f"{len(results_df):,}")
-    col2.metric("Flagged as fraud", f"{int(results_df['flagged'].sum()):,}")
-    col3.metric("Actual fraud in set", f"{int(results_df['true_label'].sum()):,}")
-    col4.metric("Flag rate", f"{results_df['flagged'].mean():.3%}")
+    st.caption(
+        f"Model: XGBoost (cost-sensitive) | Scored {len(results_df):,} held-out credit-card transactions "
+        f"({int(y_true.sum()):,} fraud, {y_true.mean():.3%} rate)"
+    )
+
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Precision", f"{precision_score(y_true, y_pred):.3f}")
+    c2.metric("Recall", f"{recall_score(y_true, y_pred):.3f}")
+    c3.metric("F1-score", f"{f1_score(y_true, y_pred):.3f}")
+    c4.metric("AUC-ROC", f"{roc_auc_score(y_true, y_score):.3f}")
+    c5.metric("AUC-PR", f"{average_precision_score(y_true, y_score):.3f}")
+
+    st.subheader("Confusion Matrix (held-out credit-card test set)")
+    cm = confusion_matrix(y_true, y_pred)
+    tn, fp = cm[0]
+    fn, tp = cm[1]
+    cm_df = pd.DataFrame(
+        [[tn, fp], [fn, tp]],
+        index=["Actual: Legit", "Actual: Fraud"],
+        columns=["Predicted: Legit", "Predicted: Fraud"],
+    )
+    st.dataframe(cm_df, use_container_width=True)
+    st.caption(f"Test set: {len(results_df):,} transactions, flag rate {results_df['flagged'].mean():.3%}")
 
     st.subheader("Flagged Transactions (Risk Queue)")
     flagged = results_df[results_df["flagged"]].sort_values("risk_score", ascending=False)
