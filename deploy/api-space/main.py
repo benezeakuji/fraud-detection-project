@@ -1,4 +1,6 @@
 import time
+from pathlib import Path
+
 import joblib
 import numpy as np
 import pandas as pd
@@ -8,12 +10,17 @@ from pydantic import BaseModel, Field
 
 app = FastAPI(title="Fraud Scoring API")
 
+# Resolve paths relative to this script's own location, not the process's
+# current working directory — robust regardless of where the platform sets
+# the working directory for the container/process.
+MODELS_DIR = Path(__file__).resolve().parent / "models"
+
 # --- Load the trained model and the exact fitted scaler used during preprocessing ---
 # (Same artifacts as the local prototype: models/xgb_cost.joblib and models/scaler.joblib,
 # produced by preprocess.py and train_models.py. Loading the already-fitted scaler directly
 # avoids re-reading the 150MB primary dataset on every deploy / cold start.)
-model = joblib.load("models/xgb_cost.joblib")
-scaler = joblib.load("models/scaler.joblib")
+model = joblib.load(MODELS_DIR / "xgb_cost.joblib")
+scaler = joblib.load(MODELS_DIR / "scaler.joblib")
 
 explainer = shap.TreeExplainer(model)
 

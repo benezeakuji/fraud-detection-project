@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import joblib
@@ -6,6 +8,11 @@ import streamlit as st
 
 st.set_page_config(page_title="Fraud Detection Analyst Dashboard", layout="wide")
 
+# Resolve paths relative to this script's own location, not the process's
+# current working directory — Streamlit Cloud runs apps with the repo root
+# as cwd, not the app's own folder, so a bare "models/..." path breaks there.
+MODELS_DIR = Path(__file__).resolve().parent / "models"
+
 
 @st.cache_resource
 def load_everything():
@@ -13,10 +20,10 @@ def load_everything():
     # (models/X_test.csv, models/y_test.csv — 42,559 transactions, 71 fraud,
     # already scaled by preprocess.py), rather than re-downloading and
     # re-splitting the 150MB primary dataset on every deploy / cold start.
-    X_test = pd.read_csv("models/X_test.csv")
-    y_test = pd.read_csv("models/y_test.csv")["Class"]
+    X_test = pd.read_csv(MODELS_DIR / "X_test.csv")
+    y_test = pd.read_csv(MODELS_DIR / "y_test.csv")["Class"]
 
-    model = joblib.load("models/xgb_cost.joblib")
+    model = joblib.load(MODELS_DIR / "xgb_cost.joblib")
     explainer = shap.TreeExplainer(model)
     return model, explainer, X_test, y_test
 
