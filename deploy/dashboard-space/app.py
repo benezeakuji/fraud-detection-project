@@ -103,14 +103,6 @@ with tab_paysim:
             f"| Cross-validated on {rows:,} real mobile-money transactions "
             f"({paysim['total_fraud']:,} fraud, {paysim['fraud_rate']:.3%} rate)"
         )
-        st.info(
-            "PaySim does not share features with the credit-card dataset (no V1–V28 PCA components), "
-            "so this is a freshly trained model on PaySim's own fields — demonstrating that the same "
-            "modeling approach generalizes to a second, structurally different fraud dataset, not that "
-            "the same trained artifact is being reused.",
-            icon="ℹ️",
-        )
-
         m = paysim["metrics"]
         c1, c2, c3, c4, c5 = st.columns(5)
         c1.metric("Precision", f"{m['precision']:.3f}")
